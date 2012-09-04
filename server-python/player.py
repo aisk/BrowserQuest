@@ -2,7 +2,9 @@ import logging
 from cgi import escape
 
 import gametypes
+import message
 from character import Character
+from util import register_callback
 
 class Player(Character):
     def __init__(self, connection, world):
@@ -15,21 +17,22 @@ class Player(Character):
         self.has_entered_game = False
         self.is_dead = False
 
-    def send(self, message):
-        self.connection.send(message)
+    def send(self, msg):
+        self.connection.send(msg)
 
     def on_connect(self):
         self.connection.write_message('go')
 
-    def on_message(self, message):
-        action = message[0]
-        logging.debug('Received: %s' %message)
+    @register_callback(name='message_callback')
+    def on_message(self, msg):
+        action = msg[0]
+        logging.debug('Received: %s' %msg)
 
         if action == gametypes.Messages.HELLO:
-            self.name = escape(message[1][:15]) if message[1] else 'lorem ipsum'
+            self.name = escape(msg[1][:15]) if msg[1] else 'lorem ipsum'
             self.kind = gametypes.Entities.WARRIOR
-            self.equip_armor = message[2]
-            self.equip_weapon = message[3]
+            self.equip_armor = msg[2]
+            self.equip_weapon = msg[3]
 
             # TODO
 
@@ -39,14 +42,14 @@ class Player(Character):
             self.is_dead = False
 
         if action == gametypes.Messages.CHAT:
-            msg = message[1]
-            if msg:
-                msg = escape(msg[:60])
-                # TODO
+            content = msg[1]
+            if content:
+                content = escape(content[:60])
+                print message.Chat(self, content).serialize()
 
         if action == gametypes.Messages.MOVE:
-            self.x = message[1]
-            self.y = message[2]
+            self.x = msg[1]
+            self.y = msg[2]
 
     def on_close(self):
         pass
