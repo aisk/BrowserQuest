@@ -8,11 +8,12 @@ from tornado.httpserver import HTTPServer
 
 from world import World
 from player import Player
+from util import RegisterCallBackMixin
 
 def not_implemented_func(*args, **kwargs):
     raise NotImplementedError
 
-class Connection(WebSocketHandler):
+class Connection(WebSocketHandler, RegisterCallBackMixin):
     def __init__(self, application, request, **kwargs):
         WebSocketHandler.__init__(self, application, request, **kwargs)
         self.login = False
@@ -30,9 +31,9 @@ class Connection(WebSocketHandler):
     def open(self):
         self.connect_callback()
 
-    def on_message(self, message):
-        message = json.loads(message)
-        self.message_callback(message)
+    def on_message(self, msg):
+        msg = json.loads(msg)
+        self.message_callback(msg)
 
     def on_close(self):
         self.close_callback()
