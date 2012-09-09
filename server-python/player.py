@@ -4,8 +4,9 @@ from cgi import escape
 import gametypes
 import message
 from character import Character
+from util import RegisterCallBackMixin
 
-class Player(Character):
+class Player(Character, RegisterCallBackMixin):
     def __init__(self, connection, world):
         self.world = world
         self.connection = connection
@@ -13,16 +14,16 @@ class Player(Character):
         self.has_entered_game = False
         self.is_dead = False
 
-        @connection.register_callback
-        def connect_callback():
+        @connection.register_callback('connect_callback')
+        def on_connect():
             self.connection.write_message('go')
 
-        @connection.register_callback
-        def close_callback():
+        @connection.register_callback('close_callback')
+        def on_close():
             pass
 
-        @connection.register_callback
-        def message_callback(msg):
+        @connection.register_callback('message_callback')
+        def on_message(msg):
             action = msg[0]
             logging.debug('Received: %s' %msg)
             if action == gametypes.Messages.HELLO:
@@ -30,6 +31,8 @@ class Player(Character):
                 self.kind = gametypes.Entities.WARRIOR
                 self.equip_armor = msg[2]
                 self.equip_weapon = msg[3]
+
+                self.world.enter_callback(self)
 
                 # TODO
                 self.send([gametypes.Messages.WELCOME, self.id, self.name,44,212,80])
@@ -41,7 +44,7 @@ class Player(Character):
                 content = msg[1]
                 if content:
                     content = escape(content[:60])
-                    print message.Chat(self, content).serialize()
+                    self.broadcast_to_zone(message.Chat(self, content), False)
 
             if action == gametypes.Messages.MOVE:
                 self.x = msg[1]
@@ -50,5 +53,7 @@ class Player(Character):
     def send(self, msg):
         self.connection.send(msg)
 
-
+    def broadcast_to_zone(self, msg, ignore_self):
+        self.broadcastzone_callback(msg, ignore_self)
+        pass
 

@@ -43,7 +43,7 @@ class GameServer(object):
         self.worlds = []
         for i in xrange(3):
             world = World('world%d' %i, self)
-            world.run()
+            world.run('../server/maps/world_server.json')
             self.worlds.append(world)
         application = Application([
             ('/', Connection, {'gameserver': self}),
@@ -53,7 +53,7 @@ class GameServer(object):
 
     def on_connect(self, connection):
         world = self.worlds[0]  # TODO
-        world.on_player_connect(Player(connection, world))
+        world.connect_callback(Player(connection, world))
 
     def start(self):
         IOLoop.instance().start()
